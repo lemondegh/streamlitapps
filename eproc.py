@@ -27,24 +27,45 @@ day_s = int(prev_month_today.split('-')[2])
 # print(year, month, day)
 
 ROWS = 20
-
 date_option = ['공고일', '개찰일']
+duration_option = ['From/To 지정', '최근 1개월', '최근 3개월']
+work_option = ['전체', '물품', '공사', '용역', '리스', '외자', '비축', '기타', '민간']
 
-with st.form('Prompt'):
-
-    date_type_str = st.radio('기준 일자 :', date_option, horizontal=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        date_s = str(st.date_input('From', datetime.date(year_s, month_s, day_s))).replace('-', '')
-    with col2:
-        date_e = str(st.date_input('To', datetime.date(year, month, day))).replace('-', '')
+org_option = ['공고기관', '수요기관']    
         
-    title = st.text_input('공고명 검색', placeholder='공고명에 포함되는 문자열') 
-    
-    disp_rows = st.number_input('샘플 미리보기 라인 수', min_value=1, max_value=10000, value=10)
+with st.form('기관 검색'):
+    col1, col2 = st.columns([2, 8])
+    with col1:
+        org_str = st.selectbox('기관명', org_option)
+    with col2:
+        org_input = st.text_input('기관명 검색')
 
-    submitted = st.form_submit_button("검 색")
+    col1, col2 = st.columns([9, 1])
+    with col1:
+        st.empty()
+    with col2:
+        search = st.form_submit_button("검색", use_container_width=True)
+    
+with st.form('Prompt'):
+    col1, col2 = st.columns([2, 8])
+    with col1:
+        work_type_str = st.selectbox('업무구분', work_option)
+    with col2:
+        title = st.text_input('공고명 검색', placeholder='공고명에 포함되는 문자열') 
+
+    col1, col2, col3, col4 = st.columns([2,2,2,4])
+    with col1:
+        date_type_str = st.selectbox('기준 일자 :', date_option)
+    with col2:
+        date_s = str(st.date_input('From', datetime.date(year_s, month_s, day_s))).replace('-', '')
+    with col3:
+        date_e = str(st.date_input('To', datetime.date(year, month, day))).replace('-', '')
+    with col4:
+        duration_str = st.selectbox('기간', duration_option, label_visibility='hidden')  
+
+    disp_rows = st.number_input('샘플 미리보기 라인 수', min_value=1, max_value=10000, value=10)
+    
+    submitted = st.form_submit_button("검 색", use_container_width=True)
     
 if submitted:
     error = False
@@ -97,7 +118,10 @@ if submitted:
         print('Data ================================')
         # count = r_dict['totalCount']
         count = r_dict['response']['body']['totalCount']
-
+        print('Count : ', count)
+        
+        if count == 0:
+            st.info('검색 조건에 해당하는 데이터가 검색되지 않습니다.', icon='❗')
         loopCount = math.ceil(count / ROWS)
         print('Loop count : ', loopCount)
         
