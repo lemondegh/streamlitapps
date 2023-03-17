@@ -71,7 +71,7 @@ with col3:
 with col4:
     duration_str = st.selectbox('기간', duration_option, key='duration_str', label_visibility='hidden', on_change=change_duration)  
 
-disp_rows = st.number_input('샘플 미리보기 라인 수', min_value=1, max_value=10000, value=10)
+# disp_rows = st.number_input('샘플 미리보기 라인 수', min_value=1, max_value=10000, value=10)
 
 col1, col2 = st.columns([8, 2])
 with col1:
@@ -183,9 +183,6 @@ if get_data:
             print('New names : ', new_names)
             # Rename the columns using the dictionary
             df = df.rename(columns=new_names)
-
-            # Save the renamed DataFrame
-            # df.to_csv(r'.\Result\result.csv', index=False, encoding='utf-8-sig')
             
             if remove_dup:
                 # Remove duplicated rows by specific column
@@ -216,7 +213,7 @@ if get_data:
                     file_name=file_name,
                     mime='text/csv',
                 )   
-            st.dataframe(df_prev.head(disp_rows)) 
+            # st.dataframe(df_prev.head(disp_rows)) 
 
             # df for download documents
             df_down = df[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
@@ -230,8 +227,13 @@ if get_data:
                     if len(str(filename)) == 0:
                         print('.......................No file...')
                         return None
-                    filename = df_down.loc[df_down['공고규격파일명1'] == filename]['공고규격파일명1'].array[0]
-                    link = df_down.loc[df_down['공고규격파일명1'] == filename]['공고규격서URL1'].array[0]
+                    filename = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고명'].array[0]
+                    # link = df_down.loc[df_down['공고규격파일명1'] == filename]['공고규격서URL1'].array[0]
+                    url = 'https://www.g2b.go.kr:8081/ep/invitation/publish/bidInfoDtl.do?'
+                    bid_no  = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고번호'].array[0]
+                    bid_seq = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고차수'].array[0]
+                    bid_no_str = 'bidno=' + str(bid_no) + '&bidseq=0' + str(bid_seq)
+                    link = url + bid_no_str
                     print('** Name : {}'.format(filename))
                     print('** link : {}'.format(link))
                     html = f'<a target="_blank" href="{link}">{filename}</a>'
@@ -240,15 +242,18 @@ if get_data:
                 
                 return html
 
-            df_down['공고규격파일명1'] = df_down['공고규격파일명1'].apply(make_clickable)
+            df_down['입찰공고명'] = df_down['입찰공고명'].apply(make_clickable)
                 
             # df_down.to_excel('epoc.xlsx')
-            df_down = df_down[['입찰공고번호', '입찰공고명', '공고기관명', '수요기관명', '공고규격파일명1']]
+            # df_down = df_down[['입찰공고번호', '입찰공고명', '공고기관명', '수요기관명', '공고규격파일명1']]
+            df_down = df_down[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
+                '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명'
+                        ]]
   
             # pd.set_option('display.max_colwidth', 40)
-            with st.expander('문서 확인', expanded=False):
+            with st.expander('문서 확인', expanded=True):
                 # df_down = df_down.to_html(escape=False, justify='center', col_space="120px")
                 df_down = df_down.to_html(escape=False, justify='center', \
-                    col_space=[140,200,120,120,300])
+                    col_space=[140,140,300,120,120,140,140,140,120])
                 st.write(df_down, unsafe_allow_html=True)
             
