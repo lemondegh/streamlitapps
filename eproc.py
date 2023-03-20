@@ -26,7 +26,9 @@ month_s = int(prev_month_today.split('-')[1])
 day_s = int(prev_month_today.split('-')[2])
 
 df = pd.DataFrame()
-st.set_page_config(layout="wide")
+# st.set_page_config(layout="wide")
+st.set_page_config(page_title='EPROC', layout = 'wide', initial_sidebar_state = 'auto')
+# favicon being an object of the same kind as the one you should provide st.image() with (ie. a PIL array for example) or a string (url or local file path)
 if 'new_date_s' not in st.session_state:
     st.session_state.duration_str = 'From/To 지정'
     st.session_state.new_date_s = datetime.date(year_s, month_s, day_s)
