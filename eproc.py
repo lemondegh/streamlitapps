@@ -82,180 +82,181 @@ with col2:
     get_data = st.button('데이터 검색')
 
 if get_data:
-    error = False
+    with st.spinner('데이터 검색 중...'):
+        error = False
 
-    if remove_dup:
-        print('************Remove duplicated rows....')
-    else:
-        print('************Do not remove duplicated rows....')
-        
-    title_len = len(title.strip())
-    if title_len == 0:
-        st.warning('공고명 검색어가 입력되지 않았습니다.', icon="⚠️")
-    else:
-        url = 'https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListEvaluationIndstrytyMfrcInfo01'
-        url = URL + SERVICE
-        
-        if date_type_str == date_option[0]:
-            date_type = 1
+        if remove_dup:
+            print('************Remove duplicated rows....')
         else:
-            date_type = 2
-                       
-        queryString = "?" + urlencode(
-            { 
-            "ServiceKey": unquote(API_KEY), 
-            "pageNo": 1,
-            "numOfRows": ROWS,
-            "inqryDiv": str(date_type),
-            "inqryBgnDt":date_s + '0000',
-            "inqryEndDt":date_e + '2359',
-            "bidNtceNm": title,
-            "type": "json"
-            }
-        )
-        queryUrl = url + queryString
-        print('Date type : ', date_type)
-        print('Full URL : \n', queryUrl)
-        
-        response = requests.get(queryUrl)
-
-        # json_str = response.read().decode("utf-8")
-        try:
-            r_dict = json.loads(response.text)
-        except:
-            print('Error : \n', response.text)
-
-        print(r_dict)
-
-        import pandas as pd
-        from pandas.io.json import json_normalize
-
-        # body = [json_object['body']['data']]
-        print('Data ================================')
-        # count = r_dict['totalCount']
-        count = r_dict['response']['body']['totalCount']
-        print('Count : ', count)
-        
-        if count == 0:
-            st.info('검색 조건에 해당하는 데이터가 검색되지 않습니다.', icon='❗')
-        else:    
-            loopCount = math.ceil(count / ROWS)
-            print('Loop count : ', loopCount)
+            print('************Do not remove duplicated rows....')
             
-            finalTotalData = pd.DataFrame()
-            for ind in range(loopCount):
-                    queryString = "?" + urlencode(
-                        { 
-                        "ServiceKey": unquote(API_KEY), 
-                        "pageNo": 1,
-                        "numOfRows": ROWS,
-                        "inqryDiv": str(date_type),
-                        "inqryBgnDt":date_s + '0000',
-                        "inqryEndDt":date_e + '2359',
-                        "bidNtceNm": title,
-                        "type": "json"
-                        }
-                    )
+        title_len = len(title.strip())
+        if title_len == 0:
+            st.warning('공고명 검색어가 입력되지 않았습니다.', icon="⚠️")
+        else:
+            url = 'https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListEvaluationIndstrytyMfrcInfo01'
+            url = URL + SERVICE
+            
+            if date_type_str == date_option[0]:
+                date_type = 1
+            else:
+                date_type = 2
+                        
+            queryString = "?" + urlencode(
+                { 
+                "ServiceKey": unquote(API_KEY), 
+                "pageNo": 1,
+                "numOfRows": ROWS,
+                "inqryDiv": str(date_type),
+                "inqryBgnDt":date_s + '0000',
+                "inqryEndDt":date_e + '2359',
+                "bidNtceNm": title,
+                "type": "json"
+                }
+            )
+            queryUrl = url + queryString
+            print('Date type : ', date_type)
+            print('Full URL : \n', queryUrl)
+            
+            response = requests.get(queryUrl)
 
-                    queryURL = url + queryString
-                    response = requests.get(queryURL)
-                    r_dict = json.loads(response.text)
-                    
-                    # data = r_dict['data']
-                    data = r_dict['response']['body']['items']
+            # json_str = response.read().decode("utf-8")
+            try:
+                r_dict = json.loads(response.text)
+            except:
+                print('Error : \n', response.text)
 
-                    jnormal = pd.json_normalize(data)
-                    # print(jnormal)
-                    finalTotalData = pd.concat([finalTotalData, pd.DataFrame(jnormal)], axis = 0, ignore_index = True)
-
-            print(finalTotalData)
-            # finalTotalData.rename(columns={'bidNtceNo':'NO'}, inplace=True)
-            finalTotalData.to_csv('result_tmp.csv', encoding='utf-8-sig', index=False)
+            print(r_dict)
 
             import pandas as pd
+            from pandas.io.json import json_normalize
 
-            # Load the original DataFrame
-            df = pd.read_csv('result_tmp.csv')
-
-            # Load the mapping file
-            mapping = pd.read_csv("col_map.csv", index_col="org")
-
-            # Create a dictionary mapping the old column names to the new ones
-            new_names = mapping["new"].to_dict()
-            print('New names : ', new_names)
-            # Rename the columns using the dictionary
-            df = df.rename(columns=new_names)
+            # body = [json_object['body']['data']]
+            print('Data ================================')
+            # count = r_dict['totalCount']
+            count = r_dict['response']['body']['totalCount']
+            print('Count : ', count)
             
-            if remove_dup:
-                # Remove duplicated rows by specific column
-                df = df.sort_values('입찰공고차수', ascending=False).drop_duplicates('입찰공고번호').reset_index(drop=True)
-
-            print(df)
-            len_df = len(df)
-            
-            # df for preview
-            df_prev = df[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명']]
-            # df_prev = df[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
-            #     '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명', \
-            #         '공고규격파일명1', '공고규격서URL1'
-            #             ]]
-            df_prev = df_prev.astype({'입찰공고번호':str})
-            df_prev = df_prev.sort_values('입찰공고일시', ascending=False)
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.text('Total rows :' + str(len_df))
-            with col2:
-                file = title + '_' + date_e + '.csv'
-                file_name = st.text_input('File name', file, label_visibility="collapsed")
-            with col3:
-                csv = df_prev.to_csv().encode('utf-8-sig')
-                st.download_button(
-                    label="Download data as CSV",
-                    data=csv,
-                    file_name=file_name,
-                    mime='text/csv',
-                )   
-            # st.dataframe(df_prev.head(disp_rows)) 
-
-            # df for download documents
-            df_down = df[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
-                '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명', \
-                    '공고규격파일명1', '공고규격서URL1'
-                        ]]
-
-            print(df_down)
-            def make_clickable(filename):
-                try:
-                    if len(str(filename)) == 0:
-                        print('.......................No file...')
-                        return None
-                    filename = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고명'].array[0]
-                    # link = df_down.loc[df_down['공고규격파일명1'] == filename]['공고규격서URL1'].array[0]
-                    url = 'https://www.g2b.go.kr:8081/ep/invitation/publish/bidInfoDtl.do?'
-                    bid_no  = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고번호'].array[0]
-                    bid_seq = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고차수'].array[0]
-                    bid_no_str = 'bidno=' + str(bid_no) + '&bidseq=0' + str(bid_seq)
-                    link = url + bid_no_str
-                    print('** Name : {}'.format(filename))
-                    print('** link : {}'.format(link))
-                    html = f'<a target="_blank" href="{link}">{filename}</a>'
-                except:
-                    html = None
+            if count == 0:
+                st.info('검색 조건에 해당하는 데이터가 검색되지 않습니다.', icon='❗')
+            else:    
+                loopCount = math.ceil(count / ROWS)
+                print('Loop count : ', loopCount)
                 
-                return html
+                finalTotalData = pd.DataFrame()
+                for ind in range(loopCount):
+                        queryString = "?" + urlencode(
+                            { 
+                            "ServiceKey": unquote(API_KEY), 
+                            "pageNo": 1,
+                            "numOfRows": ROWS,
+                            "inqryDiv": str(date_type),
+                            "inqryBgnDt":date_s + '0000',
+                            "inqryEndDt":date_e + '2359',
+                            "bidNtceNm": title,
+                            "type": "json"
+                            }
+                        )
 
-            df_down['입찰공고명'] = df_down['입찰공고명'].apply(make_clickable)
+                        queryURL = url + queryString
+                        response = requests.get(queryURL)
+                        r_dict = json.loads(response.text)
+                        
+                        # data = r_dict['data']
+                        data = r_dict['response']['body']['items']
+
+                        jnormal = pd.json_normalize(data)
+                        # print(jnormal)
+                        finalTotalData = pd.concat([finalTotalData, pd.DataFrame(jnormal)], axis = 0, ignore_index = True)
+
+                print(finalTotalData)
+                # finalTotalData.rename(columns={'bidNtceNo':'NO'}, inplace=True)
+                finalTotalData.to_csv('result_tmp.csv', encoding='utf-8-sig', index=False)
+
+                import pandas as pd
+
+                # Load the original DataFrame
+                df = pd.read_csv('result_tmp.csv')
+
+                # Load the mapping file
+                mapping = pd.read_csv("col_map.csv", index_col="org")
+
+                # Create a dictionary mapping the old column names to the new ones
+                new_names = mapping["new"].to_dict()
+                print('New names : ', new_names)
+                # Rename the columns using the dictionary
+                df = df.rename(columns=new_names)
                 
-            # df_down.to_excel('epoc.xlsx')
-            # df_down = df_down[['입찰공고번호', '입찰공고명', '공고기관명', '수요기관명', '공고규격파일명1']]
-            df_down = df_down[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
-                '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명'
-                        ]]
-  
-            # pd.set_option('display.max_colwidth', 40)
-            with st.expander('문서 확인', expanded=True):
-                # df_down = df_down.to_html(escape=False, justify='center', col_space="120px")
-                df_down = df_down.to_html(escape=False, justify='center', \
-                    col_space=[140,140,300,120,120,140,140,140,120])
-                st.write(df_down, unsafe_allow_html=True)
+                if remove_dup:
+                    # Remove duplicated rows by specific column
+                    df = df.sort_values('입찰공고차수', ascending=False).drop_duplicates('입찰공고번호').reset_index(drop=True)
+
+                print(df)
+                len_df = len(df)
+                
+                # df for preview
+                df_prev = df[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명']]
+                # df_prev = df[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
+                #     '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명', \
+                #         '공고규격파일명1', '공고규격서URL1'
+                #             ]]
+                df_prev = df_prev.astype({'입찰공고번호':str})
+                df_prev = df_prev.sort_values('입찰공고일시', ascending=False)
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.text('Total rows :' + str(len_df))
+                with col2:
+                    file = title + '_' + date_e + '.csv'
+                    file_name = st.text_input('File name', file, label_visibility="collapsed")
+                with col3:
+                    csv = df.to_csv().encode('utf-8-sig')
+                    st.download_button(
+                        label="Download data as CSV",
+                        data=csv,
+                        file_name=file_name,
+                        mime='text/csv',
+                    )    
+                # st.dataframe(df_prev.head(disp_rows)) 
+
+                # df for download documents
+                df_down = df[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
+                    '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명', \
+                        '공고규격파일명1', '공고규격서URL1'
+                            ]]
+
+                print(df_down)
+                def make_clickable(filename):
+                    try:
+                        if len(str(filename)) == 0:
+                            print('.......................No file...')
+                            return None
+                        filename = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고명'].array[0]
+                        # link = df_down.loc[df_down['공고규격파일명1'] == filename]['공고규격서URL1'].array[0]
+                        url = 'https://www.g2b.go.kr:8081/ep/invitation/publish/bidInfoDtl.do?'
+                        bid_no  = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고번호'].array[0]
+                        bid_seq = df_down.loc[df_down['입찰공고명'] == filename]['입찰공고차수'].array[0]
+                        bid_no_str = 'bidno=' + str(bid_no) + '&bidseq=0' + str(bid_seq)
+                        link = url + bid_no_str
+                        print('** Name : {}'.format(filename))
+                        print('** link : {}'.format(link))
+                        html = f'<a target="_blank" href="{link}">{filename}</a>'
+                    except:
+                        html = None
+                    
+                    return html
+
+                df_down['입찰공고명'] = df_down['입찰공고명'].apply(make_clickable)
+                    
+                # df_down.to_excel('epoc.xlsx')
+                # df_down = df_down[['입찰공고번호', '입찰공고명', '공고기관명', '수요기관명', '공고규격파일명1']]
+                df_down = df_down[['입찰공고번호', '입찰공고차수', '입찰공고명', '공고기관명', '수요기관명', \
+                    '입찰공고일시', '입찰마감일시', '공동수급방식명', '공고종류명'
+                            ]]
+    
+                # pd.set_option('display.max_colwidth', 40)
+                with st.expander('문서 확인', expanded=True):
+                    # df_down = df_down.to_html(escape=False, justify='center', col_space="120px")
+                    df_down = df_down.to_html(escape=False, justify='center', \
+                        col_space=[140,140,300,120,120,140,140,140,120])
+                    st.write(df_down, unsafe_allow_html=True)
             
